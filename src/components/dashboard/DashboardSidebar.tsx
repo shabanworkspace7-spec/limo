@@ -7,6 +7,7 @@ import {
   CalendarCheck,
   MessageSquare,
   ArrowLeft,
+  LogOut,
   ChevronLeft,
   ChevronRight,
   Crown,
@@ -96,8 +97,8 @@ export default function DashboardSidebar({
         })}
       </nav>
 
-      {/* Bottom: Back to website */}
-      <div className="px-2 pb-4 space-y-2">
+      {/* Bottom: Back to website & Logout */}
+      <div className="px-2 pb-4 space-y-1">
         <a
           href="/"
           className="flex items-center gap-3 w-full rounded-lg px-3 py-2.5 text-sm font-medium text-gray-400 hover:bg-[rgba(201,168,76,0.08)] hover:text-gray-200 transition-all duration-200"
@@ -117,6 +118,28 @@ export default function DashboardSidebar({
             )}
           </AnimatePresence>
         </a>
+        <button
+          onClick={async () => {
+            await fetch('/api/auth/logout', { method: 'POST' });
+            window.location.href = '/admin';
+          }}
+          className="flex items-center gap-3 w-full rounded-lg px-3 py-2.5 text-sm font-medium text-red-400/70 hover:bg-red-400/10 hover:text-red-400 transition-all duration-200"
+        >
+          <LogOut className="size-5 shrink-0" />
+          <AnimatePresence>
+            {!collapsed && (
+              <motion.span
+                initial={{ opacity: 0, width: 0 }}
+                animate={{ opacity: 1, width: 'auto' }}
+                exit={{ opacity: 0, width: 0 }}
+                transition={{ duration: 0.15 }}
+                className="whitespace-nowrap overflow-hidden"
+              >
+                Logout
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </button>
       </div>
 
       {/* Collapse toggle button */}

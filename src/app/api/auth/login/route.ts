@@ -1,0 +1,39 @@
+import { NextResponse } from 'next/server';
+import { verifyCredentials, createSessionToken, createSessionCookie } from '@/lib/auth';
+
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+    const { username, password } = body;
+
+    if (!username || !password) {
+      return NextResponse.json(
+        { error: 'Username and password are required' },
+        { status: 400 }
+      );
+    }
+
+    if (!verifyCredentials(username, password)) {
+      return NextResponse.json(
+        { error: 'Invalid username or password' },
+        { status: 401 }
+      );
+    }
+
+    const token = createSessionToken();
+    const cookie = createSessionCookie(token);
+
+    return NextResponse.json(
+      { success: true, message: 'Login successful' },
+      {
+        status: 200,
+        headers: { 'Set-Cookie': cookie },
+      }
+    );
+  } catch {
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}

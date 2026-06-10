@@ -10,6 +10,7 @@ const quickLinks = [
   { name: 'Services', href: '#services' },
   { name: 'Book Now', href: '#booking' },
   { name: 'Contact', href: '#contact' },
+  { name: 'Admin', href: '/admin' },
 ];
 
 const services = [
@@ -79,8 +80,10 @@ export default function Footer() {
                   <a
                     href={link.href}
                     onClick={(e) => {
-                      e.preventDefault();
-                      handleNavClick(link.href);
+                      if (link.href.startsWith('#')) {
+                        e.preventDefault();
+                        handleNavClick(link.href);
+                      }
                     }}
                     className="text-sm text-gray-400 hover:text-gold transition-colors duration-300"
                   >
