@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Users, Briefcase, DollarSign } from 'lucide-react';
+import { Users, Briefcase, DollarSign, Eye } from 'lucide-react';
 import Image from 'next/image';
 
 interface Vehicle {
@@ -20,41 +20,6 @@ interface Vehicle {
 const categories = ['All', 'Sedan', 'SUV', 'Limousine', 'Bus', 'Premium'];
 
 function CarCard({ vehicle, index }: { vehicle: Vehicle; index: number }) {
-  const cardRef = useRef<HTMLDivElement>(null);
-  const [rotateX, setRotateX] = useState(0);
-  const [rotateY, setRotateY] = useState(0);
-  const [isHovered, setIsHovered] = useState(false);
-
-  const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (!cardRef.current) return;
-    const rect = cardRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    const centerX = rect.width / 2;
-    const centerY = rect.height / 2;
-    const newRotateX = ((y - centerY) / centerY) * -12;
-    const newRotateY = ((x - centerX) / centerX) * 12;
-    setRotateX(newRotateX);
-    setRotateY(newRotateY);
-  }, []);
-
-  const handleMouseEnter = () => {
-    setIsHovered(true);
-  };
-
-  const handleMouseLeave = () => {
-    setIsHovered(false);
-    setRotateX(0);
-    setRotateY(0);
-  };
-
-  useEffect(() => {
-    const card = cardRef.current;
-    if (!card) return;
-    card.addEventListener('mousemove', handleMouseMove as EventListener);
-    return () => card.removeEventListener('mousemove', handleMouseMove as EventListener);
-  }, [handleMouseMove]);
-
   const scrollToBooking = () => {
     const el = document.querySelector('#booking');
     if (el) el.scrollIntoView({ behavior: 'smooth' });
@@ -66,60 +31,49 @@ function CarCard({ vehicle, index }: { vehicle: Vehicle; index: number }) {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-50px' }}
       transition={{ duration: 0.6, delay: index * 0.1 }}
-      className="perspective-card"
+      className="card-hover-lift group"
     >
-      <div
-        ref={cardRef}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-        className="perspective-card-inner glass rounded-2xl overflow-hidden cursor-pointer group"
-        style={{
-          transform: `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`,
-        }}
-      >
-        {/* Car Image */}
-        <div className="relative h-48 sm:h-56 bg-gradient-to-b from-gold/5 to-transparent overflow-hidden">
+      <div className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl hover:border-[#c9a84c]/20 transition-all duration-500">
+        {/* Car Image Container */}
+        <div className="relative h-48 sm:h-56 bg-gradient-to-b from-gray-50 to-white overflow-hidden image-zoom-hover">
           <Image
             src={vehicle.image}
             alt={vehicle.name}
             fill
-            className="object-contain p-4 transition-transform duration-500 group-hover:scale-110"
+            className="object-contain p-6 transition-transform duration-600 group-hover:scale-105"
           />
-          {/* Glossy reflection on hover */}
-          {isHovered && (
-            <div
-              className="absolute inset-0 pointer-events-none"
-              style={{
-                background: `linear-gradient(${105 + rotateY * 5}deg, transparent 30%, rgba(201,168,76,0.08) 50%, transparent 70%)`,
-              }}
-            />
-          )}
-          <div className="absolute top-3 right-3 px-3 py-1 text-xs font-semibold uppercase tracking-wider gold-gradient rounded-full text-black">
+          {/* Category badge */}
+          <div className="absolute top-3 right-3 px-3 py-1 text-xs font-semibold uppercase tracking-wider gold-gradient rounded-full text-black shadow-sm">
             {vehicle.category}
           </div>
+          {/* Hover overlay */}
+          <div className="absolute inset-0 bg-[#c9a84c]/0 group-hover:bg-[#c9a84c]/5 transition-colors duration-500" />
         </div>
+
+        {/* Gold bottom border that appears on hover */}
+        <div className="h-0.5 bg-gradient-to-r from-[#c9a84c] via-[#d4af37] to-[#c9a84c] scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left" />
 
         {/* Content */}
         <div className="p-5 sm:p-6">
-          <h3 className="text-lg sm:text-xl font-bold text-white mb-2" style={{ fontFamily: 'var(--font-playfair)' }}>
+          <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2" style={{ fontFamily: 'var(--font-playfair)' }}>
             {vehicle.name}
           </h3>
-          <p className="text-sm text-gray-400 mb-4 line-clamp-2">{vehicle.description}</p>
+          <p className="text-sm text-gray-500 mb-4 line-clamp-2">{vehicle.description}</p>
 
           {/* Specs */}
-          <div className="flex items-center gap-4 mb-4 text-sm text-gray-400">
-            <div className="flex items-center gap-1">
-              <Users className="w-4 h-4 text-gold" />
+          <div className="flex items-center gap-4 mb-4 text-sm text-gray-500">
+            <div className="flex items-center gap-1.5">
+              <Users className="w-4 h-4 text-[#c9a84c]" />
               <span>{vehicle.passengers}</span>
             </div>
-            <div className="flex items-center gap-1">
-              <Briefcase className="w-4 h-4 text-gold" />
+            <div className="flex items-center gap-1.5">
+              <Briefcase className="w-4 h-4 text-[#c9a84c]" />
               <span>{vehicle.luggage}</span>
             </div>
             <div className="flex items-center gap-1 ml-auto">
-              <DollarSign className="w-4 h-4 text-gold" />
-              <span className="text-gold font-semibold">{vehicle.pricePerHour}</span>
-              <span className="text-xs text-gray-500">/hr</span>
+              <DollarSign className="w-4 h-4 text-[#c9a84c]" />
+              <span className="text-[#c9a84c] font-semibold">{vehicle.pricePerHour}</span>
+              <span className="text-xs text-gray-400">/hr</span>
             </div>
           </div>
 
@@ -128,22 +82,32 @@ function CarCard({ vehicle, index }: { vehicle: Vehicle; index: number }) {
             {vehicle.features.split(',').slice(0, 3).map((feature) => (
               <span
                 key={feature}
-                className="px-2 py-0.5 text-[10px] uppercase tracking-wider text-gold/70 border border-gold/20 rounded-full"
+                className="px-2.5 py-0.5 text-[10px] uppercase tracking-wider text-[#c9a84c] bg-[#c9a84c]/5 border border-[#c9a84c]/15 rounded-full"
               >
                 {feature.trim()}
               </span>
             ))}
           </div>
 
-          {/* Book Button */}
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={scrollToBooking}
-            className="w-full py-2.5 rounded-full gold-gradient text-black font-semibold text-sm hover:shadow-lg hover:shadow-gold/20 transition-all duration-300"
-          >
-            Book Now
-          </motion.button>
+          {/* Action Buttons */}
+          <div className="flex gap-2">
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={scrollToBooking}
+              className="flex-1 py-2.5 rounded-full gold-gradient text-black font-semibold text-sm hover:shadow-lg hover:shadow-[#c9a84c]/20 transition-all duration-300"
+            >
+              Book Now
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-full border border-gray-200 text-gray-600 text-sm font-medium hover:border-[#c9a84c]/40 hover:text-[#c9a84c] transition-all duration-300"
+            >
+              <Eye className="w-4 h-4" />
+              Details
+            </motion.button>
+          </div>
         </div>
       </div>
     </motion.div>
@@ -178,10 +142,8 @@ export default function FleetSection() {
       : vehicles.filter((v) => v.category.toLowerCase() === activeCategory.toLowerCase());
 
   return (
-    <section id="fleet" className="py-20 sm:py-28 relative">
-      <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0a] via-[#0f0f0f] to-[#0a0a0a]" />
-      
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="fleet" className="py-20 sm:py-28 relative bg-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -190,14 +152,14 @@ export default function FleetSection() {
           transition={{ duration: 0.6 }}
           className="text-center mb-12 sm:mb-16"
         >
-          <span className="text-xs tracking-[0.3em] uppercase text-gold/70 mb-3 block">
+          <span className="text-xs tracking-[0.3em] uppercase text-[#c9a84c] mb-3 block font-medium">
             Our Collection
           </span>
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4" style={{ fontFamily: 'var(--font-playfair)' }}>
-            Premium <span className="gold-text">Fleet</span>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-4" style={{ fontFamily: 'var(--font-playfair)' }}>
+            Premium <span className="gradient-text-gold">Fleet</span>
           </h2>
-          <div className="w-24 h-[2px] gold-gradient mx-auto mb-4" />
-          <p className="text-gray-400 max-w-2xl mx-auto">
+          <div className="w-24 h-[2px] bg-gradient-to-r from-[#c9a84c] to-[#d4af37] mx-auto mb-4" />
+          <p className="text-gray-500 max-w-2xl mx-auto">
             Choose from our exclusive collection of luxury vehicles, each maintained to the highest standards of excellence.
           </p>
         </motion.div>
@@ -214,10 +176,10 @@ export default function FleetSection() {
             <button
               key={cat}
               onClick={() => setActiveCategory(cat)}
-              className={`px-5 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+              className={`relative px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-300 ${
                 activeCategory === cat
-                  ? 'gold-gradient text-black shadow-lg shadow-gold/20'
-                  : 'text-gray-400 border border-gold/20 hover:border-gold/50 hover:text-gold'
+                  ? 'gold-gradient text-black shadow-lg shadow-[#c9a84c]/20'
+                  : 'text-gray-500 border border-gray-200 hover:border-[#c9a84c]/40 hover:text-[#c9a84c] bg-white'
               }`}
             >
               {cat}
@@ -229,7 +191,7 @@ export default function FleetSection() {
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {[...Array(6)].map((_, i) => (
-              <div key={i} className="glass rounded-2xl h-96 animate-pulse" />
+              <div key={i} className="bg-gray-100 rounded-2xl h-96 animate-pulse" />
             ))}
           </div>
         ) : (

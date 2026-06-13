@@ -20,14 +20,13 @@ function AnimatedCounter({ target, suffix, duration = 2000 }: { target: number; 
       ([entry]) => {
         if (entry.isIntersecting && !hasAnimated.current) {
           hasAnimated.current = true;
-          const start = 0;
           const startTime = performance.now();
 
           const animate = (currentTime: number) => {
             const elapsed = currentTime - startTime;
             const progress = Math.min(elapsed / duration, 1);
             const eased = 1 - Math.pow(1 - progress, 3);
-            setCount(Math.floor(start + (target - start) * eased));
+            setCount(Math.floor(target * eased));
             if (progress < 1) {
               requestAnimationFrame(animate);
             }
@@ -43,9 +42,8 @@ function AnimatedCounter({ target, suffix, duration = 2000 }: { target: number; 
   }, [target, duration]);
 
   return (
-    <div ref={ref} className="text-3xl sm:text-4xl md:text-5xl font-bold gold-text" style={{ fontFamily: 'var(--font-playfair)' }}>
-      {count}
-      {suffix}
+    <div ref={ref} className="text-3xl sm:text-4xl md:text-5xl font-bold gradient-text-gold" style={{ fontFamily: 'var(--font-playfair)' }}>
+      {count}{suffix}
     </div>
   );
 }
@@ -57,10 +55,10 @@ export default function StatsSection() {
   };
 
   return (
-    <section className="py-20 sm:py-28 relative overflow-hidden">
-      {/* Background with gold gradient overlay */}
-      <div className="absolute inset-0 bg-[#0a0a0a]" />
-      <div className="absolute inset-0 bg-gradient-to-r from-gold/5 via-transparent to-gold/5" />
+    <section className="py-20 sm:py-28 relative overflow-hidden bg-[#0a0a0a]">
+      {/* Gold gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-r from-[#c9a84c]/5 via-transparent to-[#c9a84c]/5" />
+      {/* Pattern overlay */}
       <div
         className="absolute inset-0 opacity-[0.03]"
         style={{
@@ -77,11 +75,18 @@ export default function StatsSection() {
           transition={{ duration: 0.6 }}
           className="grid grid-cols-2 md:grid-cols-4 gap-8 sm:gap-12 mb-16"
         >
-          {stats.map((stat) => (
-            <div key={stat.label} className="text-center">
+          {stats.map((stat, i) => (
+            <motion.div
+              key={stat.label}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.1 }}
+              className="text-center"
+            >
               <AnimatedCounter target={stat.target} suffix={stat.suffix} />
               <p className="text-xs sm:text-sm text-gray-400 mt-2 uppercase tracking-wider">{stat.label}</p>
-            </div>
+            </motion.div>
           ))}
         </motion.div>
 
@@ -100,10 +105,10 @@ export default function StatsSection() {
             Book your premium ride today and discover why thousands choose Elite Limo for their transportation needs.
           </p>
           <motion.button
-            whileHover={{ scale: 1.05 }}
+            whileHover={{ scale: 1.05, boxShadow: '0 0 30px rgba(201,168,76,0.3)' }}
             whileTap={{ scale: 0.95 }}
             onClick={scrollToBooking}
-            className="gold-gradient px-10 py-4 rounded-full text-black font-semibold text-lg hover:shadow-xl hover:shadow-gold/30 transition-all duration-300"
+            className="gold-gradient px-10 py-4 rounded-full text-black font-semibold text-lg hover:shadow-xl hover:shadow-[#c9a84c]/30 transition-all duration-300"
           >
             Book Your Ride Now
           </motion.button>
