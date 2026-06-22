@@ -4,10 +4,20 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
 }
 
+// Create Prisma client with error handling
+function createPrismaClient() {
+  try {
+    return new PrismaClient({
+      log: process.env.NODE_ENV === 'development' ? ['query'] : ['error'],
+    })
+  } catch (error) {
+    console.error('Failed to create Prisma client:', error)
+    throw error
+  }
+}
+
 export const db =
   globalForPrisma.prisma ??
-  new PrismaClient({
-    log: ['query'],
-  })
+  createPrismaClient()
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db

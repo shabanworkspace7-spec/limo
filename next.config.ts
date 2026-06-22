@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: "standalone",
+  // Remove output: "standalone" - it causes 500 errors on preview deployment
+  // because the standalone server can't locate the Prisma database file
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -11,7 +12,6 @@ const nextConfig: NextConfig = {
   },
   // Allow cross-origin requests from preview deployment domains
   allowedDevOrigins: [
-    "preview-chat-e12791af-4619-446a-9a2c-892008526cc7.space-z.ai",
     ".space-z.ai",
     "localhost",
   ],
