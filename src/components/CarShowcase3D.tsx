@@ -152,8 +152,10 @@ export default function CarShowcase3D() {
                       alt="Stretch Limousine"
                       width={500}
                       height={300}
-                      className="object-contain drop-shadow-2xl"
+                      className="object-contain drop-shadow-2xl w-full h-auto"
                       style={{
+                        width: '100%',
+                        height: 'auto',
                         filter: 'drop-shadow(0 20px 40px rgba(201,168,76,0.15))',
                       }}
                     />

@@ -64,9 +64,17 @@ function AnimatedStat({ value, suffix, label, delay }: { value: number; suffix: 
 
 const heroWords = ['Experience', 'Luxury', 'Beyond', 'Compare'];
 
+const initialSparkleParticles = Array.from({ length: 15 }, (_, i) => ({
+  left: `${10 + ((i * 7) % 80)}%`,
+  top: `${12 + ((i * 11) % 72)}%`,
+  duration: 4 + ((i * 2) % 4),
+  delay: (i % 5) * 0.4,
+}));
+
 export default function HeroSection() {
   const [scrollY, setScrollY] = useState(0);
   const [wordIndex, setWordIndex] = useState(0);
+  const [sparkleParticles] = useState(initialSparkleParticles);
 
   const handleScroll = useCallback(() => {
     setScrollY(window.scrollY);
@@ -129,13 +137,13 @@ export default function HeroSection() {
 
       {/* Sparkle particles */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(15)].map((_, i) => (
+        {sparkleParticles.map((particle, i) => (
           <motion.div
             key={i}
             className="absolute w-1 h-1 bg-[#c9a84c]/40 rounded-full"
             style={{
-              left: `${10 + Math.random() * 80}%`,
-              top: `${10 + Math.random() * 80}%`,
+              left: particle.left,
+              top: particle.top,
             }}
             animate={{
               y: [0, -30, 0],
@@ -143,9 +151,9 @@ export default function HeroSection() {
               scale: [0.5, 1.5, 0.5],
             }}
             transition={{
-              duration: 4 + Math.random() * 4,
+              duration: particle.duration,
               repeat: Infinity,
-              delay: Math.random() * 3,
+              delay: particle.delay,
               ease: 'easeInOut',
             }}
           />

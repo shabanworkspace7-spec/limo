@@ -67,6 +67,7 @@ export default function OverviewTab() {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [recentBookings, setRecentBookings] = useState<RecentBooking[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -75,12 +76,25 @@ export default function OverviewTab() {
           fetch('/api/analytics'),
           fetch('/api/bookings'),
         ]);
+
         const analyticsData = await analyticsRes.json();
         const bookingsData = await bookingsRes.json();
-        setAnalytics(analyticsData);
+
+        if (!analyticsRes.ok || !analyticsData || typeof analyticsData !== 'object' || !('bookingsByStatus' in analyticsData)) {
+          const errorMessage = analyticsData?.error || 'Invalid analytics response';
+          throw new Error(errorMessage);
+        }
+
+        if (!bookingsRes.ok || !Array.isArray(bookingsData)) {
+          const errorMessage = bookingsData?.error || 'Invalid bookings response';
+          throw new Error(errorMessage);
+        }
+
+        setAnalytics(analyticsData as AnalyticsData);
         setRecentBookings(bookingsData.slice(0, 5));
       } catch (err) {
-        console.error('Error fetching analytics:', err);
+        console.error('Error fetching dashboard data:', err);
+        setError(err instanceof Error ? err.message : 'Unable to load dashboard data');
       } finally {
         setLoading(false);
       }
@@ -88,7 +102,7 @@ export default function OverviewTab() {
     fetchData();
   }, []);
 
-  if (loading || !analytics) {
+  if (loading) {
     return (
       <div className="space-y-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -101,6 +115,15 @@ export default function OverviewTab() {
             <Skeleton key={i} className="h-72 rounded-xl bg-[#1a1a1a]" />
           ))}
         </div>
+      </div>
+    );
+  }
+
+  if (error || !analytics) {
+    return (
+      <div className="p-6 rounded-3xl bg-[#111111] border border-[rgba(201,168,76,0.15)] text-center text-gray-300">
+        <h2 className="text-lg font-semibold text-white mb-2">Unable to load dashboard data</h2>
+        <p className="text-sm text-gray-400">{error || 'Server did not return valid analytics data.'}</p>
       </div>
     );
   }

@@ -14,6 +14,7 @@ export default function AdminLoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [particles, setParticles] = useState<{ left: string; top: string; duration: number; delay: number; }[]>([]);
 
   // Check if already authenticated
   useEffect(() => {
@@ -26,6 +27,17 @@ export default function AdminLoginPage() {
       })
       .catch(() => {});
   }, [router]);
+
+  useEffect(() => {
+    setParticles(
+      Array.from({ length: 20 }, (_, i) => ({
+        left: `${((i * 7 + 15) % 85) + 7}%`,
+        top: `${((i * 11 + 12) % 80) + 10}%`,
+        duration: 3 + (i % 4) * 0.6,
+        delay: (i % 6) * 0.25,
+      }))
+    );
+  }, []);
 
   // Track mouse for parallax effect
   useEffect(() => {
@@ -119,22 +131,22 @@ export default function AdminLoginPage() {
         />
 
         {/* Floating particles */}
-        {[...Array(20)].map((_, i) => (
+        {particles.map((particle, i) => (
           <motion.div
             key={i}
             className="absolute w-1 h-1 rounded-full bg-[#c9a84c]/30"
             style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
+              left: particle.left,
+              top: particle.top,
             }}
             animate={{
               y: [0, -30, 0],
               opacity: [0.2, 0.8, 0.2],
             }}
             transition={{
-              duration: 3 + Math.random() * 4,
+              duration: particle.duration,
               repeat: Infinity,
-              delay: Math.random() * 3,
+              delay: particle.delay,
             }}
           />
         ))}
