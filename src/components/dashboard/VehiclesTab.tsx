@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus,
@@ -13,6 +13,11 @@ import {
   CheckCircle2,
   XCircle,
   Car,
+  Upload,
+  Image as ImageIcon,
+  Link,
+  X,
+  Loader2,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -90,6 +95,13 @@ export default function VehiclesTab() {
   const [formData, setFormData] = useState(emptyVehicle);
   const [submitting, setSubmitting] = useState(false);
 
+  // Image upload states
+  const [imageMode, setImageMode] = useState<'url' | 'upload'>('upload');
+  const [uploading, setUploading] = useState(false);
+  const [uploadPreview, setUploadPreview] = useState<string | null>(null);
+  const [dragOver, setDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const fetchVehicles = useCallback(async () => {
     try {
       const res = await fetch('/api/vehicles');
@@ -110,6 +122,8 @@ export default function VehiclesTab() {
   const handleAdd = () => {
     setEditingVehicle(null);
     setFormData(emptyVehicle);
+    setImageMode('upload');
+    setUploadPreview(null);
     setFormOpen(true);
   };
 
@@ -126,6 +140,14 @@ export default function VehiclesTab() {
       description: vehicle.description,
       available: vehicle.available,
     });
+    // If image is an uploaded file, show preview and set mode to upload
+    if (vehicle.image.startsWith('/uploads/')) {
+      setImageMode('upload');
+      setUploadPreview(vehicle.image);
+    } else {
+      setImageMode('url');
+      setUploadPreview(vehicle.image);
+    }
     setFormOpen(true);
   };
 
@@ -149,9 +171,119 @@ export default function VehiclesTab() {
     }
   };
 
+  // Handle file upload
+  const uploadFile = async (file: File): Promise<string | null> => {
+    if (!file) return null;
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml'];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('Invalid file type. Only JPEG, PNG, WebP, GIF, and SVG are allowed.');
+      return null;
+    }
+
+    // Validate file size (10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('File too large. Maximum size is 10MB.');
+      return null;
+    }
+
+    setUploading(true);
+    try {
+      const uploadFormData = new FormData();
+      uploadFormData.append('file', file);
+
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: uploadFormData,
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Upload failed');
+      }
+
+      const data = await res.json();
+      toast.success('Image uploaded successfully!');
+      return data.url;
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to upload image');
+      return null;
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // Handle file selection from input
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Show preview immediately
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setUploadPreview(ev.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+
+    // Upload file
+    const url = await uploadFile(file);
+    if (url) {
+      setFormData({ ...formData, image: url });
+    }
+  };
+
+  // Handle drag and drop
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(false);
+
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+
+    // Show preview
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setUploadPreview(ev.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+
+    // Upload file
+    const url = await uploadFile(file);
+    if (url) {
+      setFormData({ ...formData, image: url });
+    }
+  };
+
+  // Clear uploaded image
+  const clearUpload = () => {
+    setUploadPreview(null);
+    setFormData({ ...formData, image: '' });
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const handleSubmit = async () => {
     if (!formData.name || !formData.category || !formData.pricePerHour || !formData.image || !formData.features || !formData.description) {
-      toast.error('Please fill in all required fields');
+      toast.error('Please fill in all required fields including image');
+      return;
+    }
+    if (uploading) {
+      toast.error('Please wait for the image to finish uploading');
       return;
     }
     setSubmitting(true);
@@ -174,6 +306,7 @@ export default function VehiclesTab() {
         toast.success('Vehicle created successfully');
       }
       setFormOpen(false);
+      setUploadPreview(null);
       fetchVehicles();
     } catch {
       toast.error(editingVehicle ? 'Failed to update vehicle' : 'Failed to create vehicle');
@@ -429,14 +562,152 @@ export default function VehiclesTab() {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label className="text-gray-300">Image URL *</Label>
-              <Input
-                value={formData.image}
-                onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                placeholder="/images/cars/vehicle.png"
-                className="bg-[#1a1a1a] border-[rgba(201,168,76,0.2)] text-white placeholder:text-gray-500"
-              />
+            {/* ===== IMAGE SECTION — Upload or URL ===== */}
+            <div className="space-y-3">
+              <Label className="text-gray-300">Vehicle Image *</Label>
+
+              {/* Mode Toggle */}
+              <div className="flex rounded-lg overflow-hidden border border-[rgba(201,168,76,0.2)]">
+                <button
+                  type="button"
+                  onClick={() => setImageMode('upload')}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-all duration-200 ${
+                    imageMode === 'upload'
+                      ? 'bg-[#c9a84c] text-black'
+                      : 'bg-[#1a1a1a] text-gray-400 hover:text-gray-300'
+                  }`}
+                >
+                  <Upload className="size-4" />
+                  Upload from Device
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setImageMode('url')}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-all duration-200 ${
+                    imageMode === 'url'
+                      ? 'bg-[#c9a84c] text-black'
+                      : 'bg-[#1a1a1a] text-gray-400 hover:text-gray-300'
+                  }`}
+                >
+                  <Link className="size-4" />
+                  Image URL
+                </button>
+              </div>
+
+              {/* Upload Mode */}
+              {imageMode === 'upload' && (
+                <div className="space-y-3">
+                  {/* Drop Zone */}
+                  <div
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                    onClick={() => !uploading && fileInputRef.current?.click()}
+                    className={`relative border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all duration-300 ${
+                      dragOver
+                        ? 'border-[#c9a84c] bg-[#c9a84c]/10 scale-[1.02]'
+                        : uploadPreview
+                        ? 'border-[rgba(201,168,76,0.3)] bg-[#1a1a1a]'
+                        : 'border-[rgba(201,168,76,0.2)] bg-[#1a1a1a] hover:border-[rgba(201,168,76,0.4)] hover:bg-[#1a1a1a]/80'
+                    }`}
+                  >
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml"
+                      onChange={handleFileSelect}
+                      className="hidden"
+                    />
+
+                    {uploadPreview ? (
+                      <div className="relative group">
+                        <img
+                          src={uploadPreview}
+                          alt="Preview"
+                          className="w-full h-40 object-contain rounded-lg"
+                        />
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-lg flex items-center justify-center">
+                          <p className="text-white text-sm font-medium">Click to change image</p>
+                        </div>
+                        {!uploading && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              clearUpload();
+                            }}
+                            className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition-colors shadow-lg z-10"
+                          >
+                            <X className="size-4" />
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <div className="w-16 h-16 mx-auto rounded-full bg-[rgba(201,168,76,0.1)] flex items-center justify-center">
+                          <ImageIcon className="size-8 text-[#c9a84c]" />
+                        </div>
+                        <div>
+                          <p className="text-white text-sm font-medium">
+                            {dragOver ? 'Drop your image here!' : 'Drag & drop image here'}
+                          </p>
+                          <p className="text-gray-500 text-xs mt-1">
+                            or click to browse from your device
+                          </p>
+                        </div>
+                        <div className="flex items-center justify-center gap-2 text-gray-500 text-xs">
+                          <span>JPEG, PNG, WebP, GIF, SVG</span>
+                          <span className="text-[rgba(201,168,76,0.3)]">|</span>
+                          <span>Max 10MB</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Upload Progress Overlay */}
+                    {uploading && (
+                      <div className="absolute inset-0 bg-black/60 rounded-xl flex flex-col items-center justify-center">
+                        <Loader2 className="size-8 text-[#c9a84c] animate-spin mb-2" />
+                        <p className="text-white text-sm font-medium">Uploading...</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Image path display */}
+                  {formData.image && formData.image.startsWith('/uploads/') && !uploading && (
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-500/10 border border-green-500/20">
+                      <CheckCircle2 className="size-4 text-green-400 shrink-0" />
+                      <span className="text-xs text-green-300 truncate">{formData.image}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* URL Mode */}
+              {imageMode === 'url' && (
+                <div className="space-y-2">
+                  <Input
+                    value={formData.image}
+                    onChange={(e) => {
+                      setFormData({ ...formData, image: e.target.value });
+                      setUploadPreview(e.target.value);
+                    }}
+                    placeholder="https://example.com/car-image.png or /images/cars/vehicle.png"
+                    className="bg-[#1a1a1a] border-[rgba(201,168,76,0.2)] text-white placeholder:text-gray-500"
+                  />
+                  {formData.image && (
+                    <div className="mt-2 rounded-lg overflow-hidden border border-[rgba(201,168,76,0.15)] bg-[#1a1a1a]">
+                      <img
+                        src={formData.image}
+                        alt="Preview"
+                        className="w-full h-32 object-contain p-2"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -486,10 +757,10 @@ export default function VehiclesTab() {
             </Button>
             <Button
               onClick={handleSubmit}
-              disabled={submitting}
-              className="gold-gradient text-black font-semibold hover:shadow-[0_0_20px_rgba(201,168,76,0.3)]"
+              disabled={submitting || uploading}
+              className="gold-gradient text-black font-semibold hover:shadow-[0_0_20px_rgba(201,168,76,0.3)] disabled:opacity-50"
             >
-              {submitting ? 'Saving...' : editingVehicle ? 'Update Vehicle' : 'Create Vehicle'}
+              {submitting ? 'Saving...' : uploading ? 'Uploading Image...' : editingVehicle ? 'Update Vehicle' : 'Create Vehicle'}
             </Button>
           </DialogFooter>
         </DialogContent>
