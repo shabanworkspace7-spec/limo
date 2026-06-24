@@ -5,6 +5,11 @@ out/
 .env*
 .DS_Store
 
+# Ignore SQLite Databases
+prisma/*.db
+prisma/*.db-journal
+prisma/*.db-wal
+
 # Ignore uploaded media
 upload/*.mov
 upload/*.png
